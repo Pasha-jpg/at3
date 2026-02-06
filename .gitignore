@@ -1,0 +1,78 @@
+# Standard NextJS gitignore
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+bun-debug.log*
+
+# Dependency directories
+node_modules/
+
+# Build output
+.next/
+out/
+dist/
+.cache/
+coverage/
+
+# Next.js specific
+.next/static/
+.next/server/
+.next/cache/
+.next/types/
+
+# Production
+build/
+*.local
+*.pid
+*.seed
+*.pid.lock
+
+# Env files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*.tmp
+
+# Testing
+jest-html-reporters-*.html
+jest-cache/
+playwright-report/
+test-results/
+
+# Misc
+*.tgz
+*.zip
+*.tar
+*.gz
+
+# Local deployment or Docker
+docker-compose.override.yml
+*.envrc
+.docker/
+.env.backup
+.envrc.local
+
+# Yarn / npm
+.yarn/cache
+.pnp.*
+.pnpm-store/
+
+# Optional: Ignore local Next.js telemetry
+.next/trace
+.next/telemetry
