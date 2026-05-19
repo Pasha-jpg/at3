@@ -94,7 +94,7 @@ Additional API resources include:
 | 1   | Apply basic language syntax and layout using Next.js             | ☐       |
 | 2   | Apply object-oriented principles using React within Next.js      | ☐       |
 | 3   | Debug using IDE tools and fix syntax errors                      | ☐       |
-| 4   | Implement full CRUD functionality for Projects and Tasks         | ☐       |
+| 4   | Implement full CRUD functionality for the API routes             | ☐       |
 | 5   | Develop in a framework environment with error handling           | ☐       |
 | 6   | Implement App Router layout, CSS framework, and error components | ☐       |
 | 7   | Maintain data state and display on pages                         | ☐       |
