@@ -8,7 +8,7 @@
 
 ## Assessment Overview
 
-In this assessment, you will develop a **Next.js 15 (App Router)** frontend application integrated with a **provided Laravel Project Management Workspace API**.  
+In this assessment, you will develop a **Next.js 15 (App Router)** frontend application integrated with a **provided Laravel Project Management Workspace API**.
 You will demonstrate full **CRUD functionality** for the `projects` and `tasks` routes while using the `users` and `auth` routes (provided by the lecturer) for authentication and user handling.
 
 ---
@@ -20,7 +20,7 @@ You will demonstrate full **CRUD functionality** for the `projects` and `tasks` 
 -   **Laravel Project Management Workspace API** (provided by lecturer)
 -   **Postman Online API Documentation** (official published documentation)
 -   **GitHub Classroom repository** with linting + static deployment workflow
--   **Deployed API instance** available on _Screencraft_ for live endpoint testing **OR**  
+-   **Deployed API instance** available on _Screencraft_ for live endpoint testing **OR**
     **Working Laravel codebase** for local development
 -   **Sample JSON response files** representing example API objects
 -   **Database schema diagram**
@@ -29,7 +29,7 @@ You will demonstrate full **CRUD functionality** for the `projects` and `tasks` 
 
 ## Assessment Instructions
 
-You are to build a **web-based program** using an object-oriented programming language.  
+You are to build a **web-based program** using an object-oriented programming language.
 These tasks will be informed by the provided API and assessment template.
 
 **You must:**
@@ -37,12 +37,15 @@ These tasks will be informed by the provided API and assessment template.
 -   Develop the application using the **Next.js 15 App Router** structure.
 -   Use **Next.js components** such as `<Link>`, `<Image>`, and standard error components.
 -   Build a **mobile-responsive UI/UX** using a chosen **CSS framework** (Tailwind, Bulma, Bootstrap, etc.).
--   Implement full **CRUD operations** for the `projects` and `tasks` API routes.
+-   Implement full **CRUD operations** for the API routes below.
 -   Integrate Laravel API endpoints for:
     -   `users` _(provided by lecturer in class activity)_
     -   `auth` _(provided in assessment resources)_
     -   `projects`
     -   `tasks`
+    -   `milestones`
+    -   `checklist items`
+    -   `comments`
 -   Handle **forms** and **routes** with clear validation and error feedback.
 -   Submit via **GitHub Classroom** with a passing **GitHub Actions workflow** (linting + static build).
 -   Use **small, specific, descriptive Git commits** showing progressive development.
@@ -70,7 +73,7 @@ These tasks will be informed by the provided API and assessment template.
 
 ## API Documentation Reference
 
-Students will use the **Laravel Project Management Workspace API**, documented online via Postman.  
+Students will use the **Laravel Project Management Workspace API**, documented online via Postman.
 The documentation provides full endpoint definitions and CRUD requirements.
 
 Additional API resources include:
@@ -79,7 +82,7 @@ Additional API resources include:
 -   A **local Laravel codebase** for development
 -   Example **JSON response files** for each resource type
 
-**Postman Documentation:**  
+**Postman Documentation:**
 [https://documenter.getpostman.com/view/30237461/2sB3WpQLLK](https://documenter.getpostman.com/view/30237461/2sB3WpQLLK)
 
 ---
