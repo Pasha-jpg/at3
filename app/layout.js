@@ -1,75 +1,98 @@
 import Link from "next/link";
-
 import "../styles/globals.css";
 
 export const metadata = {
-    title: "AT3 Next.js App",
-    description: "A modern application built with Next.js and Bulma",
-    openGraph: {
-        title: "My Next.js App",
-        description: "A modern web application built with Next.js",
-        images: [
-            {
-                url: "/logo.png",
-                width: 800,
-                height: 600,
-                alt: "App Logo",
-            },
-        ],
-        siteName: "My Next.js App",
-    },
+  title: "AT3 Next.js App",
+  description: "A modern application built with Next.js",
+  openGraph: {
+    title: "My Next.js App",
+    description: "A modern web application built with Next.js",
+    images: [
+      {
+        url: "/logo.png",
+        width: 800,
+        height: 600,
+        alt: "App Logo",
+      },
+    ],
+    siteName: "My Next.js App",
+  },
 };
 
 export default function RootLayout({ children }) {
-    return (
-        <html lang="en">
-            <body>
-                {/* Navbar */}
-                <nav
-                    className="navbar is-primary"
-                    role="navigation"
-                    aria-label="main navigation"
-                >
-                    <div className="navbar-brand">
-                        <Link className="navbar-item" href="/">
-                            <span className="title has-text-white">
-                                AT3 Next.js App
-                            </span>
-                        </Link>
-                    </div>
+  return (
+    <html lang="en">
+      <body>
+        {/* Modern Navbar */}
+        <nav className="navbar" role="navigation" aria-label="main navigation">
+          <div className="container">
+            <div className="navbar-brand">
+              <Link className="navbar-item" href="/">
+                <span className="brand-logo"></span>
+                <span className="brand-title">AT3 Next.js</span>
+              </Link>
+            </div>
 
-                    <div className="navbar-menu">
-                        <div className="navbar-start">
-                            <Link className="navbar-item" href="/">
-                                Home
-                            </Link>
-                            <Link className="navbar-item" href="/nasa-api">
-                                NASA API
-                            </Link>
-                            <Link className="navbar-item" href="/about">
-                                About
-                            </Link>
-                        </div>
-                    </div>
-                </nav>
+            <div className="navbar-menu">
+              <div className="navbar-end">
+                <Link className="navbar-item" href="/">
+                  Home
+                </Link>
+                <Link className="navbar-item" href="/about2">
+                  About
+                </Link>
+                <Link className="navbar-item" href="/users">
+                  Users
+                </Link>                
+                <Link className="navbar-item" href="/projects">
+                  Projects
+                </Link>
+                <Link className="navbar-item" href="/tasks">
+                  Tasks
+                </Link>
+                <Link className="navbar-item" href="/milestones">
+                  Milestones
+                </Link>
+                <Link className="navbar-item" href="/comments">
+                  Comments
+                </Link>
+               
+                <Link className="navbar-item" href="/checklist">
+                  Checklist
+                </Link>
+                                
+              </div>
+            </div>
+          </div>
+        </nav>
 
-                {/* Main content section */}
-                <section className="section">
-                    <div className="container">
-                        {children} {/* This will render the children (pages) */}
-                    </div>
-                </section>
+        {/* Main content */}
+        <main className="main-content">
+          <div className="container">
+            {children}
+          </div>
+        </main>
 
-                {/* Footer */}
-                <footer className="footer">
-                    <div className="content has-text-centered">
-                        <p>
-                            © 2025 <strong>AT3 Next.js App</strong>. Built with
-                            Next.js
-                        </p>
-                    </div>
-                </footer>
-            </body>
-        </html>
-    );
+        {/* Modern Footer */}
+        <footer className="footer">
+          <div className="container">
+            <div className="footer-content">
+              <p>© 2025 <strong>AT3 Next.js App</strong>. Built with Next.js</p>
+              <div className="footer-links">
+                <Link href="/">Home</Link>
+                <Link href="/about">About</Link>
+                <Link href="/users">Users</Link>
+                <Link href="/projects">Projects</Link>
+                <Link href="/tasks">Tasks</Link>
+                <Link href="/milestones">Milestones</Link>
+                <Link href="/comments">Comments</Link>
+                <Link href="/nasa-api">NASA API</Link>
+                
+              </div>
+            </div>
+          </div>
+        </footer>
+      </body>
+    </html>
+  );
 }
