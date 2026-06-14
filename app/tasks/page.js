@@ -11,7 +11,7 @@ export default function TasksPage() {
   const [error, setError] = useState(null);
   const [filter, setFilter] = useState('all'); // For status filtering
 
-  //MOVE handleDelete HERE (before useEffect)
+  // Delete handler
   const handleDelete = async (id) => {
     if (confirm('Are you sure you want to delete this task?')) {
       try {
@@ -55,7 +55,6 @@ export default function TasksPage() {
           project_id: task.project_id, 
           created_at: task.created_at,
           updated_at: task.updated_at,
-          // Add priority if available (optional enhancement)
           priority: task.priority || 'medium'
         }));
         
@@ -135,7 +134,7 @@ export default function TasksPage() {
 
       {filteredTasks.length === 0 ? (
         <div className="text-center py-12 text-gray-500">
-          No {filter !== 'all' ? filter : ''} tasks found. Click "New Task" to create one.
+          No {filter !== 'all' ? filter : ''} tasks found. Click &quot;New Task&quot; to create one.
         </div>
       ) : (
         <>
@@ -171,28 +170,28 @@ export default function TasksPage() {
                         <span className={`px-2 py-1 rounded text-xs ${getStatusColor(task.status)}`}>
                           {task.status}
                         </span>
-                      </td>
+                       </td>
                       <td className="p-2">
                         <span className={`px-2 py-1 rounded text-xs ${getPriorityColor(task.priority)}`}>
                           {task.priority}
                         </span>
-                      </td>
+                       </td>
                       <td className="p-2">
                         <div className="flex items-center gap-1">
                           {task.due_date?.split('T')[0] || 'N/A'}
                           {isOverdue && (
-                            <span className="text-red-500 text-xs" title="Overdue"></span>
+                            <span className="text-red-500 text-xs" title="Overdue">⚠️</span>
                           )}
                         </div>
-                      </td>
+                       </td>
                       <td className="p-2">
                         <Link href={`/projects/${task.project_id}`} className="text-blue-600 hover:underline">
                           {projects[task.project_id] || task.project_id || 'N/A'}
                         </Link>
-                      </td>
+                       </td>
                       <td className="p-2">
                         {users[task.assigned_to] || task.assigned_to || 'Unassigned'}
-                      </td>
+                       </td>
                       <td className="p-2">
                         <div className="flex gap-2">
                           <Link 
