@@ -11,6 +11,18 @@ export default function TasksPage() {
   const [error, setError] = useState(null);
   const [filter, setFilter] = useState('all'); // For status filtering
 
+  //MOVE handleDelete HERE (before useEffect)
+  const handleDelete = async (id) => {
+    if (confirm('Are you sure you want to delete this task?')) {
+      try {
+        await api.delete(`/tasks/${id}`);
+        setTasks(tasks.filter(t => t.id !== id));
+      } catch (err) {
+        alert('Failed to delete task: ' + err.message);
+      }
+    }
+  };
+
   useEffect(() => {
     // Fetch tasks and related data
     Promise.all([
@@ -169,7 +181,7 @@ export default function TasksPage() {
                         <div className="flex items-center gap-1">
                           {task.due_date?.split('T')[0] || 'N/A'}
                           {isOverdue && (
-                            <span className="text-red-500 text-xs" title="Overdue">⚠️</span>
+                            <span className="text-red-500 text-xs" title="Overdue"></span>
                           )}
                         </div>
                       </td>
@@ -196,7 +208,7 @@ export default function TasksPage() {
                             Delete
                           </button>
                         </div>
-                      </td>
+                       </td>
                     </tr>
                   );
                 })}
@@ -225,16 +237,4 @@ export default function TasksPage() {
       )}
     </div>
   );
-
-  //Delete handler
-  async function handleDelete(id) {
-    if (confirm('Are you sure you want to delete this task?')) {
-      try {
-        await api.delete(`/tasks/${id}`);
-        setTasks(tasks.filter(t => t.id !== id));
-      } catch (err) {
-        alert('Failed to delete task: ' + err.message);
-      }
-    }
-  }
 }

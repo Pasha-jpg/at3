@@ -2,7 +2,7 @@
 /* components/Carousel.js*/
 import { useState } from "react";
 import Carousel from "react-bootstrap/Carousel";
-// import CarouselImage from "./CarouselImage"; // <-- COMMENT THIS OUT FOR NOW
+import Image from "next/image";
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 function ControlledCarousel() {
@@ -15,39 +15,44 @@ function ControlledCarousel() {
   return (
     <Carousel activeIndex={index} onSelect={handleSelect}>
       <Carousel.Item>
-        {/* <CarouselImage text="First slide" /> */}
-        <img
-          src="https://picsum.photos/id/1002/800/400?text=First+Slide"
-          alt="First slide"
+        <Image
+          src="https://picsum.photos/id/1002/800/400"
+          alt="Oceania landscape"
+          width={800}
+          height={400}
           style={{ width: '100%', height: 'auto' }}
         />
         <Carousel.Caption>
           <h3>Oceania</h3>
-          <p>Nulla vitae elit libero, a pharetra augue mollis interdum.</p>
+          <p>Beautiful landscapes of Oceania with crystal clear waters.</p>
         </Carousel.Caption>
       </Carousel.Item>
+
       <Carousel.Item>
-        {/* <CarouselImage text="Second slide" /> */}
-        <img
-          src="https://picsum.photos/id/1015/800/400?text=Second+Slide"
-          alt="Second slide"
+        <Image
+          src="https://picsum.photos/id/1015/800/400"
+          alt="Mountain river"
+          width={800}
+          height={400}
           style={{ width: '100%', height: 'auto' }}
         />
         <Carousel.Caption>
           <h3>River</h3>
-          <p>Praesent commodo cursus magna, vel scelerisque nisl consectetur.</p>
+          <p>Flowing rivers through majestic mountain valleys.</p>
         </Carousel.Caption>
       </Carousel.Item>
+
       <Carousel.Item>
-        {/* <CarouselImage text="Third slide" /> */}
-        <img
-          src="https://picsum.photos/id/1005/800/400?text=Third+Slide"
-          alt="Third slide"
+        <Image
+          src="https://picsum.photos/id/1005/800/400"
+          alt="Desert landscape"
+          width={800}
+          height={400}
           style={{ width: '100%', height: 'auto' }}
         />
         <Carousel.Caption>
           <h3>Desert</h3>
-          <p>Praesent commodo cursus magna, vel scelerisque nisl consectetur.</p>
+          <p>Vast desert expanses with stunning natural beauty.</p>
         </Carousel.Caption>
       </Carousel.Item>
     </Carousel>

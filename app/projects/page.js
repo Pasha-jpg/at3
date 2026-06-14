@@ -5,26 +5,42 @@ import Link from 'next/link';
 
 export default function ProjectsPage() {
   const [projects, setProjects] = useState([]);
-  const [workspaces, setWorkspaces] = useState({}); // For workspace name mapping
   const [users, setUsers] = useState({}); // For user/owner name mapping
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Helper function to determine project status
+  const getProjectStatus = (startDate, dueDate) => {
+    const now = new Date();
+    const start = startDate ? new Date(startDate) : null;
+    const due = dueDate ? new Date(dueDate) : null;
+    
+    if (due && due < now) return 'overdue';
+    if (start && start > now) return 'not-started';
+    if (start && start <= now && (!due || due >= now)) return 'in-progress';
+    return 'planning';
+  };
+
+  // Delete handler
+  const handleDelete = async (id) => {
+    if (confirm('Are you sure you want to delete this project? This will also delete all associated tasks and milestones.')) {
+      try {
+        await api.delete(`/projects/${id}`);
+        setProjects(projects.filter(p => p.id !== id));
+      } catch (err) {
+        alert('Failed to delete project: ' + err.message);
+      }
+    }
+  };
+
   useEffect(() => {
-    // Fetch projects and related data
+    // Fetch projects and users only
     Promise.all([
       api.get('/projects'),
-      api.get('/workspaces').catch(() => ({ data: [] })),
       api.get('/users').catch(() => ({ data: [] }))
     ])
-      .then(([projectsRes, workspacesRes, usersRes]) => {
-        // Create maps for workspace and user names
-        const workspaceMap = {};
-        (workspacesRes.data || []).forEach(ws => {
-          workspaceMap[ws.id] = ws.name;
-        });
-        setWorkspaces(workspaceMap);
-
+      .then(([projectsRes, usersRes]) => {
+        // Create map for user names
         const userMap = {};
         (usersRes.data || []).forEach(user => {
           userMap[user.id] = user.name;
@@ -38,11 +54,9 @@ export default function ProjectsPage() {
           description: project.description,
           start_date: project.start_date,
           due_date: project.due_date,
-          workspace_id: project.workspace_id,
           user_id: project.user_id, 
           created_at: project.created_at,
           updated_at: project.updated_at,
-          // Add status based on dates
           status: getProjectStatus(project.start_date, project.due_date)
         }));
         
@@ -54,18 +68,6 @@ export default function ProjectsPage() {
         setLoading(false);
       });
   }, []);
-
-  // Helper function to determine project status
-  const getProjectStatus = (startDate, dueDate) => {
-    const now = new Date();
-    const start = startDate ? new Date(startDate) : null;
-    const due = dueDate ? new Date(dueDate) : null;
-    
-    if (due && due < now) return 'overdue';
-    if (start && start > now) return 'not-started';
-    if (start && start <= now && (!due || due >= now)) return 'in-progress';
-    return 'planning';
-  };
 
   const getStatusColor = (status) => {
     const colors = {
@@ -94,7 +96,6 @@ export default function ProjectsPage() {
     <div className="p-6">
       <div className="flex justify-between items-center mb-2">
         <h1 className="text-2xl font-bold">Projects</h1>
-        {/* Add New Project Button */}
         <Link 
           href="/projects/new" 
           className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
@@ -102,7 +103,7 @@ export default function ProjectsPage() {
           + New Project
         </Link>
       </div>
-      <p className="text-gray-600 mb-6">View and manage project listings with owner and workspace information</p>
+      <p className="text-gray-600 mb-6">View and manage project listings with owner information</p>
       
       {projects.length === 0 ? (
         <div className="text-center py-12 text-gray-500">
@@ -119,7 +120,6 @@ export default function ProjectsPage() {
                   <th className="p-2 text-left">Status</th> 
                   <th className="p-2 text-left">Start Date</th>
                   <th className="p-2 text-left">Due Date</th>
-                  <th className="p-2 text-left">Workspace</th>
                   <th className="p-2 text-left">Owner</th> 
                   <th className="p-2 text-left">Actions</th> 
                 </tr>
@@ -145,9 +145,6 @@ export default function ProjectsPage() {
                         <span className="ml-2 text-red-500 text-xs">⚠️</span>
                       )}
                     </td>
-                    <td className="p-2">
-                      {workspaces[project.workspace_id] || project.workspace_id || 'N/A'}
-                    </td>
                     <td className="p-2">{users[project.user_id] || project.user_id || 'Unassigned'}</td>
                     <td className="p-2">
                       <div className="flex gap-2">
@@ -171,7 +168,6 @@ export default function ProjectsPage() {
             </table>
           </div>
           
-          {/* Footer with stats */}
           <div className="mt-4 flex justify-between items-center text-gray-500">
             <div>
               Total projects: {projects.length}
@@ -192,16 +188,4 @@ export default function ProjectsPage() {
       )}
     </div>
   );
-
-  // Delete handler
-  async function handleDelete(id) {
-    if (confirm('Are you sure you want to delete this project? This will also delete all associated tasks and milestones.')) {
-      try {
-        await api.delete(`/projects/${id}`);
-        setProjects(projects.filter(p => p.id !== id));
-      } catch (err) {
-        alert('Failed to delete project: ' + err.message);
-      }
-    }
-  }
 }
