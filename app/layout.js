@@ -29,7 +29,7 @@ export default function RootLayout({ children }) {
             <div className="navbar-brand">
               <Link className="navbar-item" href="/">
                 <span className="brand-logo"></span>
-                <span className="brand-title">AT3 Next.js</span>
+                <span className="brand-title">Khurram Next.js App</span>
               </Link>
             </div>
 
