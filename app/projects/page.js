@@ -107,7 +107,7 @@ export default function ProjectsPage() {
       
       {projects.length === 0 ? (
         <div className="text-center py-12 text-gray-500">
-          No projects found. Click "New Project" to create one.
+          No projects found. Click &quot;New Project&quot; to create one.
         </div>
       ) : (
         <>
