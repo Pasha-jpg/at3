@@ -20,6 +20,7 @@ function ControlledCarousel() {
           alt="Oceania landscape"
           width={800}
           height={400}
+          loading="eager"
           style={{ width: '100%', height: 'auto' }}
         />
         <Carousel.Caption>
@@ -34,6 +35,7 @@ function ControlledCarousel() {
           alt="Mountain river"
           width={800}
           height={400}
+          loading="eager"
           style={{ width: '100%', height: 'auto' }}
         />
         <Carousel.Caption>
@@ -48,6 +50,7 @@ function ControlledCarousel() {
           alt="Desert landscape"
           width={800}
           height={400}
+          loading="eager"
           style={{ width: '100%', height: 'auto' }}
         />
         <Carousel.Caption>
