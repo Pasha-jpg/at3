@@ -2,6 +2,7 @@ import Link from "next/link";
 import "../styles/globals.css";
 
 export const metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
   title: "AT3 Next.js App",
   description: "A modern application built with Next.js",
   openGraph: {
@@ -21,7 +22,7 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
+    <html lang="en" data-scroll-behavior="smooth">
       <body>
         {/* Modern Navbar */}
         <nav className="navbar" role="navigation" aria-label="main navigation">
