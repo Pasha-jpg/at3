@@ -61,7 +61,9 @@ export default function RootLayout({ children }) {
                 <Link className="navbar-item" href="/checklist">
                   Checklist
                 </Link>
-                                
+                 <Link className="navbar-item" href="/nasa-api">
+                  Nasa
+                </Link>               
               </div>
             </div>
           </div>
