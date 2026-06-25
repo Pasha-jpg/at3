@@ -1,57 +1,144 @@
 "use client";
 import { useEffect, useState } from 'react';
 import api from '@/lib/api';
+import Link from 'next/link';
 
 export default function CommentsPage() {
   const [comments, setComments] = useState([]);
+  const [tasks, setTasks] = useState({});
+  const [users, setUsers] = useState({});
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);  // Add error state
+  const [error, setError] = useState(null);
+
+  const handleDelete = async (id) => {
+    if (confirm('Are you sure you want to delete this comment?')) {
+      try {
+        await api.delete(`/comments/${id}`);
+        setComments(comments.filter(comment => comment.id !== id));
+      } catch (err) {
+        alert('Failed to delete comment: ' + err.message);
+      }
+    }
+  };
 
   useEffect(() => {
-    api.get('/comments')
-      .then(res => {
-        // Normalize data
-        const normalizedComments = (res.data || []).map(comment => ({
+    Promise.all([
+      api.get('/comments'),
+      api.get('/tasks').catch(() => ({ data: [] })),
+      api.get('/users').catch(() => ({ data: [] }))
+    ])
+      .then(([commentsRes, tasksRes, usersRes]) => {
+        const taskMap = {};
+        (tasksRes.data || []).forEach(task => {
+          taskMap[task.id] = task.title;
+        });
+        setTasks(taskMap);
+
+        const userMap = {};
+        (usersRes.data || []).forEach(user => {
+          userMap[user.id] = user.name;
+        });
+        setUsers(userMap);
+
+        const normalizedComments = (commentsRes.data || []).map(comment => ({
           id: comment.id,
           content: comment.content,
           user_id: comment.user_id,
           task_id: comment.task_id,
           created_at: comment.created_at,
+          updated_at: comment.updated_at
         }));
+        
         setComments(normalizedComments);
         setLoading(false);
       })
-      .catch(err => {  // Add error handling
+      .catch(err => {
         setError(err.message);
         setLoading(false);
       });
   }, []);
 
   if (loading) return <div className="p-8">Loading comments...</div>;
-  if (error) return <div className="p-8 text-red-600">Error: {error}</div>;  // Show error
+  if (error) return <div className="p-8 text-red-600">Error: {error}</div>;
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold mb-2">Comments</h1>
-      <p className="text-gray-600 mb-6">View all task comments and discussions</p>  {/* ✅ Add description */}
+      <div className="flex justify-between items-center mb-2">
+        <h1 className="text-2xl font-bold">Comments</h1>
+        <Link 
+          href="/comments/new" 
+          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors"
+        >
+          + New Comment
+        </Link>
+      </div>
+      <p className="text-gray-600 mb-6">View and manage task comments and discussions</p>
       
-      <div className="space-y-4">
-        {comments.map(comment => (
-          <div key={comment.id} className="border rounded-lg p-4 bg-gray-50 hover:shadow-md transition-shadow">
-            <p className="text-gray-800">{comment.content || 'No content'}</p>
-            <div className="flex gap-4 mt-2 text-sm text-gray-500">
-              <span>User: {comment.user_id}</span>
-              <span>Task: {comment.task_id}</span>
-              <span>{comment.created_at?.split('T')[0] || 'N/A'}</span>
+      {comments.length === 0 ? (
+        <div className="text-center py-12 text-gray-500">
+          No comments found. Click &quot;New Comment&quot; to create one.
+        </div>
+      ) : (
+        <>
+          <div className="overflow-x-auto">
+            <table className="w-full border">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="p-2 text-left">Content</th>
+                  <th className="p-2 text-left">Task</th>
+                  <th className="p-2 text-left">User</th>
+                  <th className="p-2 text-left">Created</th>
+                  <th className="p-2 text-left">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {comments.map(comment => (
+                  <tr key={comment.id} className="border-t hover:bg-gray-50">
+                    <td className="p-2">
+                      <Link href={`/comments/${comment.id}`} className="text-blue-600 hover:underline">
+                        {comment.content?.substring(0, 60)}...
+                      </Link>
+                    </td>
+                    <td className="p-2">
+                      <Link href={`/tasks/${comment.task_id}`} className="text-blue-600 hover:underline">
+                        {tasks[comment.task_id] || comment.task_id || 'N/A'}
+                      </Link>
+                    </td>
+                    <td className="p-2">
+                      {users[comment.user_id] || comment.user_id || 'Unknown'}
+                    </td>
+                    <td className="p-2">
+                      {comment.created_at ? new Date(comment.created_at).toLocaleDateString() : 'N/A'}
+                    </td>
+                    <td className="p-2">
+                      <div className="flex gap-2">
+                        <Link 
+                          href={`/comments/${comment.id}/edit`}
+                          className="text-blue-500 hover:text-blue-700 text-sm transition-colors"
+                        >
+                          Edit
+                        </Link>
+                        <button 
+                          onClick={() => handleDelete(comment.id)}
+                          className="text-red-500 hover:text-red-700 text-sm transition-colors"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          
+          <div className="mt-4 flex justify-between items-center text-gray-500">
+            <div>
+              Total comments: {comments.length}
             </div>
           </div>
-        ))}
-      </div>
-      
-      {/* count footer */}
-      <div className="mt-6 text-gray-500">
-        Total comments: {comments.length}
-      </div>
+        </>
+      )}
     </div>
   );
 }
