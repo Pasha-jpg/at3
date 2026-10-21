@@ -2,32 +2,37 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import api from "@/lib/api";
 
+// ✅ Render at request time — prevents build-time API calls (fixes 429)
+export const dynamic = 'force-dynamic';
+
 async function getChecklistItem(id) {
+  if (!id || id === 'undefined' || id === 'null') notFound();
   try {
     const res = await api.get(`/checklist-items/${id}`);
     return res.data.data || res.data;
   } catch (error) {
-    if (error.response?.status === 404) {
-      notFound();
-    }
+    if (error.response?.status === 401 || error.response?.status === 404) notFound();
     throw error;
   }
 }
 
 async function getTask(id) {
+  if (!id || id === 'undefined') return null;
   try {
     const res = await api.get(`/tasks/${id}`);
     return res.data.data || res.data;
-  } catch (error) {
-    return null;
-  }
+  } catch (error) { return null; }
 }
 
 export default async function ChecklistDetail({ params }) {
   const { id } = await params;
+  if (!id || id === 'undefined' || id === 'null') notFound();
+
   const item = await getChecklistItem(id);
-  const task = item.task_id ? await getTask(item.task_id) : null;
-  
+
+  const taskId = typeof item.task_id === 'object' ? item.task_id?.id : item.task_id;
+  const task = taskId ? await getTask(taskId) : null;
+
   const createdAt = item.created?.human || item.created_at;
 
   return (
@@ -43,19 +48,19 @@ export default async function ChecklistDetail({ params }) {
       </div>
 
       <div className="flex justify-between items-center">
-        <Link
+        <a
           href="/checklist"
           className="button-secondary hover:border-slate-400 hover:bg-white"
         >
           &larr; Back to Checklist Items
-        </Link>
+        </a>
         <div className="flex gap-2">
-          <Link
+          <a
             href={`/checklist/${item.id}/edit`}
             className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition-colors"
           >
             Edit Item
-          </Link>
+          </a>
         </div>
       </div>
 
@@ -72,7 +77,7 @@ export default async function ChecklistDetail({ params }) {
                   )}
                 </div>
                 <h2 className={`text-2xl font-semibold tracking-tight text-slate-950 ${item.is_completed ? 'line-through text-gray-500' : ''}`}>
-                  {item.name}
+                  {item.name || 'Untitled Item'}
                 </h2>
               </div>
               <span className={`ml-9 text-sm px-2 py-1 rounded ${item.is_completed ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
@@ -98,9 +103,9 @@ export default async function ChecklistDetail({ params }) {
                 Associated Task
               </dt>
               <dd className="mt-2 text-sm text-slate-950">
-                <Link href={`/tasks/${task.id}`} className="text-blue-600 hover:underline">
-                  {task.title}
-                </Link>
+                <a href={`/tasks/${task.id}`} className="text-blue-600 hover:underline">
+                  {task.title || task.name || 'Untitled Task'}
+                </a>
               </dd>
             </div>
           )}
@@ -130,44 +135,4 @@ export default async function ChecklistDetail({ params }) {
   );
 }
 
-export async function generateStaticParams() {
-  // ADD ALL YOUR CHECKLIST ITEM IDs HERE
-  const allChecklistIds = [
-    '01krwdyb1f7azvn161egjftfh4',    // Your checklist item ID
-    // Add ALL your checklist item IDs here
-  ];
-  
-  try {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
-    const response = await fetch(`${baseUrl}/checklist-items`, {
-      cache: 'no-store',
-      signal: AbortSignal.timeout(5000)
-    });
-    
-    if (response.ok) {
-      const data = await response.json();
-      const items = data.data || data || [];
-      
-      if (items && Array.isArray(items) && items.length > 0) {
-        const apiParams = items.map((item) => ({
-          id: item.id.toString(),
-        }));
-        
-        const allParams = [...allChecklistIds.map(id => ({ id }))];
-        apiParams.forEach(param => {
-          if (!allParams.some(p => p.id === param.id)) {
-            allParams.push(param);
-          }
-        });
-        
-        console.log(`Generated ${allParams.length} checklist detail paths`);
-        return allParams;
-      }
-    }
-  } catch (error) {
-    console.error('Failed to fetch checklist items:', error);
-  }
-  
-  console.log(`Generated ${allChecklistIds.length} checklist detail paths (UUIDs only)`);
-  return allChecklistIds.map(id => ({ id }));
-}
+// ✅ No generateStaticParams — with force-dynamic, pages render on demand
