@@ -4,6 +4,15 @@ import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import Link from 'next/link';
 
+// ✅ Helper to safely extract array from API response
+function extractArray(response) {
+  if (!response) return [];
+  if (Array.isArray(response)) return response;
+  if (Array.isArray(response.data)) return response.data;
+  if (response.data?.data && Array.isArray(response.data.data)) return response.data.data;
+  return [];
+}
+
 export default function CreateProjectPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -21,10 +30,14 @@ export default function CreateProjectPage() {
   useEffect(() => {
     api.get('/users')
       .then(res => {
-        setUsers(res.data || []);
+        // ✅ Safely extract array
+        const usersArray = extractArray(res);
+        console.log('Users fetched:', usersArray);
+        setUsers(usersArray);
       })
       .catch(err => {
         console.error('Failed to fetch users:', err);
+        setUsers([]); // Ensure it's always an array
       });
   }, []);
 
@@ -142,9 +155,10 @@ export default function CreateProjectPage() {
             className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
           >
             <option value="">Select an owner...</option>
-            {users.map(user => (
+            {/* ✅ Safe rendering - users is always an array */}
+            {Array.isArray(users) && users.map(user => (
               <option key={user.id} value={user.id}>
-                {user.name}
+                {user.name || user.email || 'Unknown User'}
               </option>
             ))}
           </select>

@@ -4,43 +4,45 @@ import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import Link from 'next/link';
 
+function extractArray(response) {
+  if (!response) return [];
+  if (Array.isArray(response)) return response;
+  if (Array.isArray(response.data)) return response.data;
+  if (response.data?.data && Array.isArray(response.data.data)) return response.data.data;
+  return [];
+}
+
 export default function CreateTaskPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [projects, setProjects] = useState([]);
   const [users, setUsers] = useState([]);
+  
   const [formData, setFormData] = useState({
-    title: '',
+    name: '',            
     description: '',
-    status: 'pending',
+    status: 'pending',   
     priority: 'medium',
     due_date: '',
     assigned_to: '',
     project_id: ''
   });
 
-  // Fetch projects and users for dropdowns
   useEffect(() => {
     Promise.all([
       api.get('/projects').catch(() => ({ data: [] })),
       api.get('/users').catch(() => ({ data: [] }))
     ])
       .then(([projectsRes, usersRes]) => {
-        setProjects(projectsRes.data || []);
-        setUsers(usersRes.data || []);
-      })
-      .catch(err => {
-        console.error('Failed to fetch data:', err);
+        setProjects(extractArray(projectsRes));
+        setUsers(extractArray(usersRes));
       });
   }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e) => {
@@ -48,11 +50,38 @@ export default function CreateTaskPage() {
     setLoading(true);
     setError(null);
 
+    // ✅ Create the exact payload we are sending
+    const payload = {
+      name: formData.name,
+      description: formData.description || '',
+      status: formData.status,
+      priority: formData.priority,
+      due_date: formData.due_date || '',
+      project_id: formData.project_id || '',
+      assigned_to: formData.assigned_to || '',
+    };
+
+    console.log("🚀 SENDING TO BACKEND:", payload);
+
     try {
-      const response = await api.post('/tasks', formData);
-      router.push(`/tasks/${response.data.id}`);
+      const response = await api.post('/tasks', payload);
+      console.log('✅ Success:', response.data);
+      router.push('/tasks');
     } catch (err) {
-      setError(err.response?.data?.message || err.message || 'Failed to create task');
+      console.error("❌ FULL BACKEND ERROR:", err.response?.data);
+      
+      // Try to extract the exact error message to show on screen
+      const data = err.response?.data;
+      let errorMessage = "Failed to create task. Check console.";
+      
+      if (data?.message) {
+        errorMessage = data.message;
+      } else if (data?.errors) {
+        const firstKey = Object.keys(data.errors)[0];
+        errorMessage = `${firstKey}: ${data.errors[firstKey][0]}`;
+      }
+
+      setError(errorMessage);
       setLoading(false);
     }
   };
@@ -61,156 +90,107 @@ export default function CreateTaskPage() {
     <div className="p-6 max-w-4xl mx-auto">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Create New Task</h1>
-        <Link 
-          href="/tasks" 
-          className="text-gray-600 hover:text-gray-800"
-        >
-          ← Back to Tasks
-        </Link>
+        <Link href="/tasks" className="text-gray-600 hover:text-gray-800">← Back to Tasks</Link>
       </div>
 
+      {/* 🔴 THE EXACT ERROR WILL SHOW HERE */}
       {error && (
-        <div className="mb-4 p-3 bg-red-100 text-red-700 rounded">
-          Error: {error}
+        <div className="mb-4 p-4 bg-red-100 text-red-800 rounded border-2 border-red-500">
+          <p className="font-bold">Backend Error:</p>
+          <p>{error}</p>
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="bg-white shadow-md rounded px-8 pt-6 pb-8">
         <div className="mb-4">
-          <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="title">
-            Title *
-          </label>
+          <label className="block text-gray-700 text-sm font-bold mb-2">Title *</label>
           <input
-            id="title"
-            name="title"
+            name="name"
             type="text"
             required
-            value={formData.title}
+            value={formData.name}
             onChange={handleChange}
-            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-            placeholder="Enter task title"
+            className="shadow border rounded w-full py-2 px-3 text-gray-700"
           />
         </div>
 
         <div className="mb-4">
-          <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="description">
-            Description
-          </label>
+          <label className="block text-gray-700 text-sm font-bold mb-2">Description</label>
           <textarea
-            id="description"
             name="description"
-            rows="4"
+            rows="3"
             value={formData.description}
             onChange={handleChange}
-            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-            placeholder="Enter task description"
+            className="shadow border rounded w-full py-2 px-3 text-gray-700"
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="status">
-              Status
-            </label>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div>
+            <label className="block text-gray-700 text-sm font-bold mb-2">Status</label>
             <select
-              id="status"
               name="status"
               value={formData.status}
               onChange={handleChange}
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              className="shadow border rounded w-full py-2 px-3 text-gray-700"
             >
-              <option value="pending">Pending</option>
-              <option value="in-progress">In Progress</option>
-              <option value="completed">Completed</option>
+              <option value="pending">pending</option>
+              <option value="in_progress">in_progress</option>
+              <option value="in-progress">in-progress</option>
+              <option value="completed">completed</option>
             </select>
           </div>
 
-          <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="priority">
-              Priority
-            </label>
+          <div>
+            <label className="block text-gray-700 text-sm font-bold mb-2">Priority</label>
             <select
-              id="priority"
               name="priority"
               value={formData.priority}
               onChange={handleChange}
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              className="shadow border rounded w-full py-2 px-3 text-gray-700"
             >
-              <option value="low">Low</option>
-              <option value="medium">Medium</option>
-              <option value="high">High</option>
+              <option value="low">low</option>
+              <option value="medium">medium</option>
+              <option value="high">high</option>
             </select>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="due_date">
-              Due Date
-            </label>
-            <input
-              id="due_date"
-              name="due_date"
-              type="date"
-              value={formData.due_date}
-              onChange={handleChange}
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-            />
-          </div>
-
-          <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="project_id">
-              Project
-            </label>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div>
+            <label className="block text-gray-700 text-sm font-bold mb-2">Project</label>
             <select
-              id="project_id"
               name="project_id"
               value={formData.project_id}
               onChange={handleChange}
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              className="shadow border rounded w-full py-2 px-3 text-gray-700"
             >
               <option value="">Select a project...</option>
               {projects.map(project => (
-                <option key={project.id} value={project.id}>
-                  {project.name}
-                </option>
+                <option key={project.id} value={project.id}>{project.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-gray-700 text-sm font-bold mb-2">Assign To</label>
+            <select
+              name="assigned_to"
+              value={formData.assigned_to}
+              onChange={handleChange}
+              className="shadow border rounded w-full py-2 px-3 text-gray-700"
+            >
+              <option value="">Unassigned</option>
+              {users.map(user => (
+                <option key={user.id} value={user.id}>{user.name}</option>
               ))}
             </select>
           </div>
         </div>
 
-        <div className="mb-6">
-          <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="assigned_to">
-            Assign To
-          </label>
-          <select
-            id="assigned_to"
-            name="assigned_to"
-            value={formData.assigned_to}
-            onChange={handleChange}
-            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-          >
-            <option value="">Unassigned</option>
-            {users.map(user => (
-              <option key={user.id} value={user.id}>
-                {user.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="flex items-center justify-end gap-4">
-          <Link
-            href="/tasks"
-            className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-          >
-            Cancel
-          </Link>
-          <button
-            type="submit"
-            disabled={loading}
-            className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline disabled:opacity-50"
-          >
+        <div className="flex justify-end gap-4">
+          <Link href="/tasks" className="bg-gray-300 px-4 py-2 rounded">Cancel</Link>
+          <button type="submit" disabled={loading} className="bg-blue-500 text-white px-4 py-2 rounded disabled:opacity-50">
             {loading ? 'Creating...' : 'Create Task'}
           </button>
         </div>

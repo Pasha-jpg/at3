@@ -1,13 +1,17 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import api from "@/lib/api";
+import { KNOWN_IDS, generateParams } from '@/lib/knownIds';
 
 async function getProject(id) {
+  if (!id || id === 'undefined' || id === 'null') {
+    notFound();
+  }
   try {
     const res = await api.get(`/projects/${id}`);
     return res.data.data || res.data;
   } catch (error) {
-    if (error.response?.status === 404) {
+    if (error.response?.status === 401 || error.response?.status === 404) {
       notFound();
     }
     throw error;
@@ -15,16 +19,17 @@ async function getProject(id) {
 }
 
 async function getProjectTasks(projectId) {
+  if (!projectId || projectId === 'undefined') return [];
   try {
     const res = await api.get(`/tasks?project_id=${projectId}`);
     return res.data.data || res.data || [];
   } catch (error) {
-    console.error('Failed to fetch project tasks:', error);
     return [];
   }
 }
 
 async function getUser(id) {
+  if (!id || id === 'undefined') return null;
   try {
     const res = await api.get(`/users/${id}`);
     return res.data.data || res.data;
@@ -37,7 +42,6 @@ const getProjectStatus = (startDate, dueDate) => {
   const now = new Date();
   const start = startDate ? new Date(startDate) : null;
   const due = dueDate ? new Date(dueDate) : null;
-  
   if (due && due < now) return 'overdue';
   if (start && start > now) return 'not-started';
   if (start && start <= now && (!due || due >= now)) return 'in-progress';
@@ -64,12 +68,14 @@ const getStatusText = (status) => {
   return texts[status] || status;
 };
 
+// ✅ THIS IS THE REQUIRED DEFAULT EXPORT
 export default async function ProjectDetail({ params }) {
   const { id } = await params;
+  if (!id || id === 'undefined' || id === 'null') notFound();
+
   const project = await getProject(id);
   const tasks = await getProjectTasks(id);
   const owner = project.user_id ? await getUser(project.user_id) : null;
-  
   const status = getProjectStatus(project.start_date, project.due_date);
   const createdAt = project.created?.human || project.created_at;
 
@@ -124,9 +130,7 @@ export default async function ProjectDetail({ params }) {
             <dt className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
               Project ID
             </dt>
-            <dd className="mt-2 font-mono text-sm text-slate-950">
-              {project.id}
-            </dd>
+            <dd className="mt-2 font-mono text-sm text-slate-950">{project.id}</dd>
           </div>
 
           {owner && (
@@ -226,49 +230,9 @@ export default async function ProjectDetail({ params }) {
   );
 }
 
-// Generate static paths for detail view
+// ✅ generateStaticParams MUST be a NAMED export, not default
 export async function generateStaticParams() {
-  // ALWAYS return these UUIDs - this is the primary source
-  const allProjectIds = [
-    '01krwdyb16xrcwcqz400ngrbxa',    // Project 1
-    '01krwdyb188czjfa7c2pktqehg',    // Project 2
-    // Add ALL your project IDs here
-  ];
-  
-  // Also try to fetch from API
-  try {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
-    const response = await fetch(`${baseUrl}/projects`, {
-      cache: 'no-store',
-      signal: AbortSignal.timeout(5000)
-    });
-    
-    if (response.ok) {
-      const data = await response.json();
-      const projects = data.data || data || [];
-      
-      if (projects && Array.isArray(projects) && projects.length > 0) {
-        const apiParams = projects.map((project) => ({
-          id: project.id.toString(),
-        }));
-        
-        // Merge with UUIDs, avoiding duplicates
-        const allParams = [...allProjectIds.map(id => ({ id }))];
-        apiParams.forEach(param => {
-          if (!allParams.some(p => p.id === param.id)) {
-            allParams.push(param);
-          }
-        });
-        
-        console.log(`Generated ${allParams.length} project detail paths (API + UUIDs)`);
-        return allParams;
-      }
-    }
-  } catch (error) {
-    console.error('Failed to fetch projects from API:', error);
-  }
-  
-  // Return UUIDs as fallback
-  console.log(`Generated ${allProjectIds.length} project detail paths (UUIDs only)`);
-  return allProjectIds.map(id => ({ id }));
+  const params = generateParams(KNOWN_IDS.projects);
+  console.log(`✅ Generated ${params.length} project detail paths`);
+  return params;
 }

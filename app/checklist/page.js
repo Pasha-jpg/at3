@@ -5,7 +5,7 @@ import Link from 'next/link';
 
 export default function ChecklistPage() {
   const [items, setItems] = useState([]);
-  const [tasks, setTasks] = useState({}); // Task name mapping from your tasks API
+  const [tasks, setTasks] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filter, setFilter] = useState('all');
@@ -37,21 +37,45 @@ export default function ChecklistPage() {
   };
 
   useEffect(() => {
-    // Fetch checklist items and tasks (same as your tasks page)
     Promise.all([
       api.get('/checklist-items'),
-      api.get('/tasks').catch(() => ({ data: [] })) // ✅ Using tasks API
+      api.get('/tasks').catch(() => ({ data: [] }))
     ])
       .then(([itemsRes, tasksRes]) => {
-        // Create map for task names (same pattern as your tasks page)
+        // ✅ Handle nested API response structure
+        // API might return: { data: [...], meta: {...} } or { data: { data: [...] } }
+        let itemsArray = [];
+        let tasksArray = [];
+
+        // Extract items array
+        if (Array.isArray(itemsRes.data)) {
+          itemsArray = itemsRes.data;
+        } else if (itemsRes.data?.data && Array.isArray(itemsRes.data.data)) {
+          itemsArray = itemsRes.data.data;
+        } else {
+          itemsArray = [];
+        }
+
+        // Extract tasks array
+        if (Array.isArray(tasksRes.data)) {
+          tasksArray = tasksRes.data;
+        } else if (tasksRes.data?.data && Array.isArray(tasksRes.data.data)) {
+          tasksArray = tasksRes.data.data;
+        } else {
+          tasksArray = [];
+        }
+
+        // Create map for task names
         const taskMap = {};
-        (tasksRes.data || []).forEach(task => {
-          taskMap[task.id] = task.title;
+        tasksArray.forEach(task => {
+          if (task && task.id) {
+            taskMap[task.id] = task.title || 'Untitled Task';
+          }
         });
         setTasks(taskMap);
 
         // Normalize checklist items data
-        const normalizedItems = (itemsRes.data || []).map(item => ({
+        const normalizedItems = itemsArray.map(item => ({
           id: item.id,
           name: item.name || 'Untitled',
           is_completed: item.is_completed || false,
@@ -89,7 +113,7 @@ export default function ChecklistPage() {
     <div className="p-8 text-red-600">
       <h2 className="text-xl font-bold mb-2">Error Loading Checklist Items</h2>
       <p>{error}</p>
-      <p className="text-sm text-gray-500 mt-2">Please check that the API endpoints exist.</p>
+      <p className="text-sm text-gray-500 mt-2">Please check that the API endpoint /checklist-items exists.</p>
     </div>
   );
 
@@ -106,7 +130,6 @@ export default function ChecklistPage() {
       </div>
       <p className="text-gray-600 mb-6">Track and manage task checklist items</p>
       
-      {/* Filter Tabs */}
       <div className="flex gap-2 mb-4 border-b">
         {['all', 'pending', 'completed'].map(status => (
           <button
@@ -163,7 +186,6 @@ export default function ChecklistPage() {
                       </Link>
                     </td>
                     <td className="p-2">
-                      {/* ✅ Uses tasks map to display task name, same as your tasks page uses projects map */}
                       <Link href={`/tasks/${item.task_id}`} className="text-blue-600 hover:underline">
                         {tasks[item.task_id] || item.task_id || 'N/A'}
                       </Link>
@@ -193,7 +215,6 @@ export default function ChecklistPage() {
             </table>
           </div>
           
-          {/* Footer with stats */}
           <div className="mt-4 flex justify-between items-center text-gray-500">
             <div>
               Showing {filteredItems.length} of {items.length} items

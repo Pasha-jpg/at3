@@ -4,11 +4,21 @@ import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import Link from 'next/link';
 
+// ✅ Safely extract array from API response
+function extractArray(response) {
+  if (!response) return [];
+  if (Array.isArray(response)) return response;
+  if (Array.isArray(response.data)) return response.data;
+  if (response.data?.data && Array.isArray(response.data.data)) return response.data.data;
+  return [];
+}
+
 export default function CreateMilestonePage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [projects, setProjects] = useState([]);
+  
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -17,23 +27,22 @@ export default function CreateMilestonePage() {
     project_id: ''
   });
 
-  // Fetch projects for dropdown
   useEffect(() => {
+    // Fetch projects for dropdown
     api.get('/projects')
       .then(res => {
-        setProjects(res.data || []);
+        // ✅ Use the safe extractor here
+        setProjects(extractArray(res));
       })
       .catch(err => {
         console.error('Failed to fetch projects:', err);
+        setProjects([]); // Ensure it stays an array on error
       });
   }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e) => {
@@ -54,10 +63,7 @@ export default function CreateMilestonePage() {
     <div className="p-6 max-w-4xl mx-auto">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Create New Milestone</h1>
-        <Link 
-          href="/milestones" 
-          className="text-gray-600 hover:text-gray-800"
-        >
+        <Link href="/milestones" className="text-gray-600 hover:text-gray-800">
           ← Back to Milestones
         </Link>
       </div>
@@ -145,7 +151,8 @@ export default function CreateMilestonePage() {
             className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
           >
             <option value="">Select a project...</option>
-            {projects.map(project => (
+            {/* ✅ Added Array.isArray() safety check to prevent the crash */}
+            {Array.isArray(projects) && projects.map(project => (
               <option key={project.id} value={project.id}>
                 {project.name}
               </option>

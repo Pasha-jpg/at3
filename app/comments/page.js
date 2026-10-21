@@ -3,6 +3,15 @@ import { useEffect, useState } from 'react';
 import api from '@/lib/api';
 import Link from 'next/link';
 
+// ✅ Helper to safely extract array from API response
+function extractArray(response) {
+  if (!response) return [];
+  if (Array.isArray(response)) return response;
+  if (Array.isArray(response.data)) return response.data;
+  if (response.data?.data && Array.isArray(response.data.data)) return response.data.data;
+  return [];
+}
+
 export default function CommentsPage() {
   const [comments, setComments] = useState([]);
   const [tasks, setTasks] = useState({});
@@ -28,21 +37,33 @@ export default function CommentsPage() {
       api.get('/users').catch(() => ({ data: [] }))
     ])
       .then(([commentsRes, tasksRes, usersRes]) => {
+        // ✅ Safely extract arrays
+        const commentsArray = extractArray(commentsRes);
+        const tasksArray = extractArray(tasksRes);
+        const usersArray = extractArray(usersRes);
+
+        // Create map for task names
         const taskMap = {};
-        (tasksRes.data || []).forEach(task => {
-          taskMap[task.id] = task.title;
+        tasksArray.forEach(task => {
+          if (task && task.id) {
+            taskMap[task.id] = task.title || 'Untitled Task';
+          }
         });
         setTasks(taskMap);
 
+        // Create map for user names
         const userMap = {};
-        (usersRes.data || []).forEach(user => {
-          userMap[user.id] = user.name;
+        usersArray.forEach(user => {
+          if (user && user.id) {
+            userMap[user.id] = user.name || 'Unknown User';
+          }
         });
         setUsers(userMap);
 
-        const normalizedComments = (commentsRes.data || []).map(comment => ({
+        // Normalize comments data
+        const normalizedComments = commentsArray.map(comment => ({
           id: comment.id,
-          content: comment.content,
+          content: comment.content || '',
           user_id: comment.user_id,
           task_id: comment.task_id,
           created_at: comment.created_at,
@@ -53,6 +74,7 @@ export default function CommentsPage() {
         setLoading(false);
       })
       .catch(err => {
+        console.error('Error fetching comments:', err);
         setError(err.message);
         setLoading(false);
       });

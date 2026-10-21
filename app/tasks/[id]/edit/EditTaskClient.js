@@ -2,7 +2,14 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import api from '@/lib/api';
-import Link from 'next/link';
+
+function extractArray(response) {
+  if (!response) return [];
+  if (Array.isArray(response)) return response;
+  if (Array.isArray(response.data)) return response.data;
+  if (response.data?.data && Array.isArray(response.data.data)) return response.data.data;
+  return [];
+}
 
 export default function EditTaskClient() {
   const params = useParams();
@@ -13,8 +20,9 @@ export default function EditTaskClient() {
   const [notFound, setNotFound] = useState(false);
   const [projects, setProjects] = useState([]);
   const [users, setUsers] = useState([]);
+  
   const [formData, setFormData] = useState({
-    title: '',
+    name: '',
     description: '',
     status: 'pending',
     priority: 'medium',
@@ -23,7 +31,6 @@ export default function EditTaskClient() {
     project_id: ''
   });
 
-  // Fetch task data and dropdown options
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -33,9 +40,8 @@ export default function EditTaskClient() {
           api.get('/users').catch(() => ({ data: [] }))
         ]);
 
-        const taskData = taskRes.data;
+        const taskData = taskRes.data?.data || taskRes.data;
         
-        // Check if task exists
         if (!taskData || Object.keys(taskData).length === 0) {
           setNotFound(true);
           setLoading(false);
@@ -43,7 +49,7 @@ export default function EditTaskClient() {
         }
         
         setFormData({
-          title: taskData.title || '',
+          name: taskData.name || taskData.title || '',
           description: taskData.description || '',
           status: taskData.status || 'pending',
           priority: taskData.priority || 'medium',
@@ -52,8 +58,8 @@ export default function EditTaskClient() {
           project_id: taskData.project_id || ''
         });
 
-        setProjects(projectsRes.data || []);
-        setUsers(usersRes.data || []);
+        setProjects(extractArray(projectsRes));
+        setUsers(extractArray(usersRes));
         setLoading(false);
       } catch (err) {
         if (err.response?.status === 404) {
@@ -65,17 +71,12 @@ export default function EditTaskClient() {
       }
     };
 
-    if (params.id) {
-      fetchData();
-    }
+    if (params.id) fetchData();
   }, [params.id]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e) => {
@@ -84,7 +85,17 @@ export default function EditTaskClient() {
     setError(null);
 
     try {
-      await api.put(`/tasks/${params.id}`, formData);
+      const payload = {
+        name: formData.name,
+        description: formData.description || '',
+        status: formData.status,
+        priority: formData.priority,
+        due_date: formData.due_date || '',
+        project_id: formData.project_id || '',
+        assigned_to: formData.assigned_to || '',
+      };
+
+      await api.put(`/tasks/${params.id}`, payload);
       router.push(`/tasks/${params.id}`);
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Failed to update task');
@@ -92,135 +103,78 @@ export default function EditTaskClient() {
     }
   };
 
-  const getStatusColor = (status) => {
-    const colors = {
-      pending: 'bg-yellow-100 text-yellow-800',
-      'in-progress': 'bg-blue-100 text-blue-800',
-      completed: 'bg-green-100 text-green-800'
-    };
-    return colors[status] || 'bg-gray-100';
-  };
-
-  if (loading) return (
-    <div className="p-8 flex justify-center items-center min-h-[400px]">
-      <div className="text-gray-500">Loading task...</div>
-    </div>
-  );
+  if (loading) return <div className="p-8 text-center">Loading task...</div>;
 
   if (notFound) {
     return (
       <div className="p-8 text-center max-w-4xl mx-auto">
-        <div className="bg-yellow-50 border border-yellow-200 rounded p-8">
-          <h1 className="text-2xl font-bold text-gray-800 mb-4">Task Not Found</h1>
-          <p className="text-gray-600 mb-4">
-            The task with ID &quot;{params.id}&quot; doesn&apos;t exist or hasn&apos;t been pre-generated.
-          </p>
-          <Link 
-            href="/tasks" 
-            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded inline-block"
-          >
-            Back to Tasks
-          </Link>
-        </div>
+        <h1 className="text-2xl font-bold mb-4">Task Not Found</h1>
+        {/* ✅ Using a standard <a> tag instead of Link */}
+        <a href="/tasks" className="bg-blue-500 text-white px-4 py-2 rounded inline-block">Back to Tasks</a>
       </div>
     );
   }
-
-  if (error) return (
-    <div className="p-8 max-w-4xl mx-auto">
-      <div className="bg-red-50 border border-red-200 rounded p-4 text-red-600">
-        <h3 className="font-semibold">Error Loading Task</h3>
-        <p>{error}</p>
-        <Link href="/tasks" className="text-blue-500 hover:underline mt-2 inline-block">
-          ← Back to Tasks
-        </Link>
-      </div>
-    </div>
-  );
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <Link 
-            href={`/tasks/${params.id}`} 
-            className="text-gray-600 hover:text-gray-800 inline-flex items-center gap-1"
-          >
+          {/* ✅ Using a standard <a> tag instead of Link */}
+          <a href={`/tasks/${params.id}`} className="text-gray-600 hover:text-gray-800">
             ← Back to Task
-          </Link>
+          </a>
           <h1 className="text-2xl font-bold mt-2">Edit Task</h1>
-        </div>
-        <div className="text-sm text-gray-500">
-          Task ID: #{params.id}
         </div>
       </div>
 
-      {error && (
-        <div className="mb-4 p-3 bg-red-100 text-red-700 rounded border border-red-200">
-          Error: {error}
-        </div>
-      )}
+      {error && <div className="mb-4 p-3 bg-red-100 text-red-700 rounded">{error}</div>}
 
       <form onSubmit={handleSubmit} className="bg-white shadow-md rounded-lg px-8 pt-6 pb-8">
         <div className="mb-4">
-          <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="title">
-            Title *
-          </label>
+          <label className="block text-gray-700 text-sm font-bold mb-2">Title *</label>
           <input
-            id="title"
-            name="title"
+            name="name"
             type="text"
             required
-            value={formData.title}
+            value={formData.name}
             onChange={handleChange}
-            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500"
-            placeholder="Enter task title"
+            className="shadow border rounded w-full py-2 px-3 text-gray-700"
           />
         </div>
 
         <div className="mb-4">
-          <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="description">
-            Description
-          </label>
+          <label className="block text-gray-700 text-sm font-bold mb-2">Description</label>
           <textarea
-            id="description"
             name="description"
             rows="4"
             value={formData.description}
             onChange={handleChange}
-            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500"
-            placeholder="Enter task description"
+            className="shadow border rounded w-full py-2 px-3 text-gray-700"
           />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="status">
-              Status
-            </label>
+            <label className="block text-gray-700 text-sm font-bold mb-2">Status</label>
             <select
-              id="status"
               name="status"
               value={formData.status}
               onChange={handleChange}
-              className={`shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 ${getStatusColor(formData.status)}`}
+              className="shadow border rounded w-full py-2 px-3 text-gray-700"
             >
               <option value="pending">Pending</option>
-              <option value="in-progress">In Progress</option>
+              <option value="in_progress">In Progress</option>
               <option value="completed">Completed</option>
             </select>
           </div>
 
           <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="priority">
-              Priority
-            </label>
+            <label className="block text-gray-700 text-sm font-bold mb-2">Priority</label>
             <select
-              id="priority"
               name="priority"
               value={formData.priority}
               onChange={handleChange}
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500"
+              className="shadow border rounded w-full py-2 px-3 text-gray-700"
             >
               <option value="low">Low</option>
               <option value="medium">Medium</option>
@@ -231,72 +185,53 @@ export default function EditTaskClient() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="due_date">
-              Due Date
-            </label>
+            <label className="block text-gray-700 text-sm font-bold mb-2">Due Date</label>
             <input
-              id="due_date"
               name="due_date"
               type="date"
               value={formData.due_date}
               onChange={handleChange}
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500"
+              className="shadow border rounded w-full py-2 px-3 text-gray-700"
             />
           </div>
 
           <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="project_id">
-              Project
-            </label>
+            <label className="block text-gray-700 text-sm font-bold mb-2">Project</label>
             <select
-              id="project_id"
               name="project_id"
               value={formData.project_id}
               onChange={handleChange}
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500"
+              className="shadow border rounded w-full py-2 px-3 text-gray-700"
             >
               <option value="">Select a project...</option>
-              {projects.map(project => (
-                <option key={project.id} value={project.id}>
-                  {project.name}
-                </option>
+              {Array.isArray(projects) && projects.map(project => (
+                <option key={project.id} value={project.id}>{project.name}</option>
               ))}
             </select>
           </div>
         </div>
 
         <div className="mb-6">
-          <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="assigned_to">
-            Assign To
-          </label>
+          <label className="block text-gray-700 text-sm font-bold mb-2">Assign To</label>
           <select
-            id="assigned_to"
             name="assigned_to"
             value={formData.assigned_to}
             onChange={handleChange}
-            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500"
+            className="shadow border rounded w-full py-2 px-3 text-gray-700"
           >
             <option value="">Unassigned</option>
-            {users.map(user => (
-              <option key={user.id} value={user.id}>
-                {user.name}
-              </option>
+            {Array.isArray(users) && users.map(user => (
+              <option key={user.id} value={user.id}>{user.name}</option>
             ))}
           </select>
         </div>
 
-        <div className="flex items-center justify-end gap-4 border-t pt-6">
-          <Link
-            href={`/tasks/${params.id}`}
-            className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition-colors"
-          >
+        <div className="flex justify-end gap-4 border-t pt-6">
+          {/* ✅ Using a standard <a> tag here too */}
+          <a href={`/tasks/${params.id}`} className="bg-gray-300 px-4 py-2 rounded text-gray-800">
             Cancel
-          </Link>
-          <button
-            type="submit"
-            disabled={saving}
-            className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline disabled:opacity-50 transition-colors"
-          >
+          </a>
+          <button type="submit" disabled={saving} className="bg-blue-500 text-white px-4 py-2 rounded">
             {saving ? 'Saving...' : 'Update Task'}
           </button>
         </div>

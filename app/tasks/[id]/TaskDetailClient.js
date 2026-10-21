@@ -19,34 +19,45 @@ export default function TaskDetailClient() {
       try {
         setLoading(true);
         const taskRes = await api.get(`/tasks/${params.id}`);
-        const taskData = taskRes.data;
+        const taskData = taskRes.data?.data || taskRes.data;
         
-        // Check if task exists
         if (!taskData || Object.keys(taskData).length === 0) {
           setNotFound(true);
           setLoading(false);
           return;
         }
-        
+
         setTask(taskData);
 
-        // Fetch project details if project_id exists
-        if (taskData.project_id) {
-          try {
-            const projectRes = await api.get(`/projects/${taskData.project_id}`);
-            setProject(projectRes.data);
-          } catch (err) {
-            console.error('Failed to fetch project:', err);
+        // ✅ FIX: Check if assigned_to is an object or just an ID string
+        if (taskData.assigned_to) {
+          if (typeof taskData.assigned_to === 'object') {
+            // The API already sent the full user object!
+            setAssignee(taskData.assigned_to);
+          } else {
+            // It's just an ID string, fetch the user
+            try {
+              const userRes = await api.get(`/users/${taskData.assigned_to}`);
+              setAssignee(userRes.data?.data || userRes.data);
+            } catch (err) {
+              console.error('Failed to fetch assignee:', err);
+            }
           }
         }
 
-        // Fetch assignee details if assigned_to exists
-        if (taskData.assigned_to) {
-          try {
-            const userRes = await api.get(`/users/${taskData.assigned_to}`);
-            setAssignee(userRes.data);
-          } catch (err) {
-            console.error('Failed to fetch assignee:', err);
+        // ✅ FIX: Check if project_id is an object or just an ID string
+        if (taskData.project_id) {
+          if (typeof taskData.project_id === 'object') {
+            // The API already sent the full project object!
+            setProject(taskData.project_id);
+          } else {
+            // It's just an ID string, fetch the project
+            try {
+              const projectRes = await api.get(`/projects/${taskData.project_id}`);
+              setProject(projectRes.data?.data || projectRes.data);
+            } catch (err) {
+              console.error('Failed to fetch project:', err);
+            }
           }
         }
 
@@ -61,9 +72,7 @@ export default function TaskDetailClient() {
       }
     };
 
-    if (params.id) {
-      fetchTaskDetails();
-    }
+    if (params.id) fetchTaskDetails();
   }, [params.id]);
 
   const handleDelete = async () => {
@@ -81,6 +90,7 @@ export default function TaskDetailClient() {
     const colors = {
       pending: 'bg-yellow-100 text-yellow-800',
       'in-progress': 'bg-blue-100 text-blue-800',
+      in_progress: 'bg-blue-100 text-blue-800',
       completed: 'bg-green-100 text-green-800'
     };
     return colors[status] || 'bg-gray-100';
@@ -102,16 +112,10 @@ export default function TaskDetailClient() {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
     });
   };
 
-  if (loading) return (
-    <div className="p-8 flex justify-center items-center min-h-[400px]">
-      <div className="text-gray-500">Loading task...</div>
-    </div>
-  );
+  if (loading) return <div className="p-8 text-center">Loading task...</div>;
 
   if (notFound) {
     return (
@@ -119,12 +123,9 @@ export default function TaskDetailClient() {
         <div className="bg-yellow-50 border border-yellow-200 rounded p-8">
           <h1 className="text-2xl font-bold text-gray-800 mb-4">Task Not Found</h1>
           <p className="text-gray-600 mb-4">
-            The task with ID &quot;{params.id}&quot; doesn&apos;t exist or hasn&apos;t been pre-generated.
+            The task with ID &quot;{params.id}&quot; doesn&apos;t exist in the database.
           </p>
-          <Link 
-            href="/tasks" 
-            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded inline-block"
-          >
+          <Link href="/tasks" className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded inline-block">
             Back to Tasks
           </Link>
         </div>
@@ -132,26 +133,13 @@ export default function TaskDetailClient() {
     );
   }
 
-  if (error) return (
-    <div className="p-8 text-red-600">
-      <div className="bg-red-50 border border-red-200 rounded p-4">
-        Error: {error}
-        <br />
-        <Link href="/tasks" className="text-blue-500 hover:underline mt-2 inline-block">
-          ← Back to Tasks
-        </Link>
-      </div>
-    </div>
-  );
+  if (error) return <div className="p-8 text-red-600">Error: {error}</div>;
+  if (!task) return <div className="p-8 text-center">Task not found</div>;
 
-  if (!task) return (
-    <div className="p-8 text-center">
-      <div className="text-gray-500">Task not found</div>
-      <Link href="/tasks" className="text-blue-500 hover:underline mt-2 inline-block">
-        ← Back to Tasks
-      </Link>
-    </div>
-  );
+  // Safely extract the assignee name whether it came from a nested object or a separate fetch
+  const assigneeName = assignee?.name || task?.assigned_to?.name || 'Unassigned';
+  const projectName = project?.name || task?.project_id?.name || 'No project assigned';
+  const projectId = project?.id || task?.project_id?.id;
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
@@ -160,22 +148,14 @@ export default function TaskDetailClient() {
           <Link href="/tasks" className="text-gray-600 hover:text-gray-800 inline-flex items-center gap-1">
             ← Back to Tasks
           </Link>
-          <h1 className="text-3xl font-bold mt-2">{task.title}</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Created: {formatDate(task.created_at)}
-          </p>
+          <h1 className="text-3xl font-bold mt-2">{task.name || task.title}</h1>
+          <p className="text-sm text-gray-500 mt-1">Created: {formatDate(task.created_at)}</p>
         </div>
         <div className="flex gap-2">
-          <Link
-            href={`/tasks/${task.id}/edit`}
-            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition-colors"
-          >
+          <Link href={`/tasks/${task.id}/edit`} className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition-colors">
             Edit
           </Link>
-          <button
-            onClick={handleDelete}
-            className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded transition-colors"
-          >
+          <button onClick={handleDelete} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded transition-colors">
             Delete
           </button>
         </div>
@@ -208,58 +188,23 @@ export default function TaskDetailClient() {
 
           <div>
             <h2 className="text-lg font-semibold mb-2 text-gray-700">Due Date</h2>
-            <div className="flex items-center gap-2">
-              <p className="text-gray-700">{formatDate(task.due_date)}</p>
-              {task.due_date && new Date(task.due_date) < new Date() && task.status !== 'completed' && (
-                <span className="text-red-500 text-sm font-medium">⚠️ Overdue</span>
-              )}
-            </div>
-          </div>
-
-          <div>
-            <h2 className="text-lg font-semibold mb-2 text-gray-700">Last Updated</h2>
-            <p className="text-gray-700">{formatDate(task.updated_at)}</p>
+            <p className="text-gray-700">{formatDate(task.due_date)}</p>
           </div>
 
           <div>
             <h2 className="text-lg font-semibold mb-2 text-gray-700">Project</h2>
-            {project ? (
-              <Link href={`/projects/${project.id}`} className="text-blue-600 hover:underline">
-                {project.name}
+            {projectId ? (
+              <Link href={`/projects/${projectId}`} className="text-blue-600 hover:underline">
+                {projectName}
               </Link>
             ) : (
-              <p className="text-gray-500">No project assigned</p>
+              <p className="text-gray-500">{projectName}</p>
             )}
           </div>
 
-          <div className="col-span-2">
+          <div>
             <h2 className="text-lg font-semibold mb-2 text-gray-700">Assigned To</h2>
-            {assignee ? (
-              <p className="text-gray-700">{assignee.name}</p>
-            ) : (
-              <p className="text-gray-500">Unassigned</p>
-            )}
-          </div>
-        </div>
-
-        {/* Quick actions footer */}
-        <div className="mt-8 pt-6 border-t border-gray-200 flex justify-between items-center">
-          <div className="text-sm text-gray-500">
-            Task ID: #{task.id}
-          </div>
-          <div className="flex gap-3">
-            <button
-              onClick={() => router.push('/tasks')}
-              className="text-gray-600 hover:text-gray-800 px-4 py-2 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
-            >
-              View All Tasks
-            </button>
-            <Link
-              href={`/tasks/${task.id}/edit`}
-              className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition-colors"
-            >
-              Edit Task
-            </Link>
+            <p className="text-gray-700">{assigneeName}</p>
           </div>
         </div>
       </div>

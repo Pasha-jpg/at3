@@ -3,9 +3,18 @@ import { useEffect, useState } from 'react';
 import api from '@/lib/api';
 import Link from 'next/link';
 
+// ✅ Helper to safely extract array from API response
+function extractArray(response) {
+  if (!response) return [];
+  if (Array.isArray(response)) return response;
+  if (Array.isArray(response.data)) return response.data;
+  if (response.data?.data && Array.isArray(response.data.data)) return response.data.data;
+  return [];
+}
+
 export default function ProjectsPage() {
   const [projects, setProjects] = useState([]);
-  const [users, setUsers] = useState({}); // For user/owner name mapping
+  const [users, setUsers] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -40,21 +49,27 @@ export default function ProjectsPage() {
       api.get('/users').catch(() => ({ data: [] }))
     ])
       .then(([projectsRes, usersRes]) => {
+        // ✅ Safely extract arrays
+        const projectsArray = extractArray(projectsRes);
+        const usersArray = extractArray(usersRes);
+
         // Create map for user names
         const userMap = {};
-        (usersRes.data || []).forEach(user => {
-          userMap[user.id] = user.name;
+        usersArray.forEach(user => {
+          if (user && user.id) {
+            userMap[user.id] = user.name || 'Unknown User';
+          }
         });
         setUsers(userMap);
 
         // Normalize projects data
-        const normalizedProjects = (projectsRes.data || []).map(project => ({
+        const normalizedProjects = projectsArray.map(project => ({
           id: project.id,
-          name: project.name,
-          description: project.description,
+          name: project.name || 'Untitled Project',
+          description: project.description || '',
           start_date: project.start_date,
           due_date: project.due_date,
-          user_id: project.user_id, 
+          user_id: project.user_id,
           created_at: project.created_at,
           updated_at: project.updated_at,
           status: getProjectStatus(project.start_date, project.due_date)
@@ -64,6 +79,7 @@ export default function ProjectsPage() {
         setLoading(false);
       })
       .catch(err => {
+        console.error('Error fetching projects:', err);
         setError(err.message);
         setLoading(false);
       });

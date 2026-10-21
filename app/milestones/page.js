@@ -3,12 +3,21 @@ import { useEffect, useState } from 'react';
 import api from '@/lib/api';
 import Link from 'next/link';
 
+// ✅ Helper to safely extract array from API response
+function extractArray(response) {
+  if (!response) return [];
+  if (Array.isArray(response)) return response;
+  if (Array.isArray(response.data)) return response.data;
+  if (response.data?.data && Array.isArray(response.data.data)) return response.data.data;
+  return [];
+}
+
 export default function MilestonesPage() {
   const [milestones, setMilestones] = useState([]);
-  const [projects, setProjects] = useState({}); // For project name mapping
+  const [projects, setProjects] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [filter, setFilter] = useState('all'); // For status filtering
+  const [filter, setFilter] = useState('all');
 
   // Delete handler
   const handleDelete = async (id) => {
@@ -29,20 +38,26 @@ export default function MilestonesPage() {
       api.get('/projects').catch(() => ({ data: [] }))
     ])
       .then(([milestonesRes, projectsRes]) => {
+        // ✅ Safely extract arrays
+        const milestonesArray = extractArray(milestonesRes);
+        const projectsArray = extractArray(projectsRes);
+
         // Create map for project names
         const projectMap = {};
-        (projectsRes.data || []).forEach(project => {
-          projectMap[project.id] = project.name;
+        projectsArray.forEach(project => {
+          if (project && project.id) {
+            projectMap[project.id] = project.name || 'Untitled Project';
+          }
         });
         setProjects(projectMap);
 
         // Normalize milestones data
-        const normalizedMilestones = (milestonesRes.data || []).map(milestone => ({
+        const normalizedMilestones = milestonesArray.map(milestone => ({
           id: milestone.id,
-          title: milestone.title,
-          description: milestone.description,
+          title: milestone.title || 'Untitled Milestone',
+          description: milestone.description || '',
           status: milestone.status || 'pending',
-          due_date: milestone.due_date,
+          due_date: milestone.due_date || milestone.target_date,
           project_id: milestone.project_id,
           created_at: milestone.created_at,
           updated_at: milestone.updated_at
@@ -52,6 +67,7 @@ export default function MilestonesPage() {
         setLoading(false);
       })
       .catch(err => {
+        console.error('Error fetching milestones:', err);
         setError(err.message);
         setLoading(false);
       });

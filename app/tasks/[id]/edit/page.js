@@ -1,26 +1,11 @@
 import EditTaskClient from './EditTaskClient';
+import { KNOWN_IDS, generateParams } from '@/lib/knownIds';
 
-// Generate a large range of static paths for edit pages
 export async function generateStaticParams() {
-  // Generate IDs from 1 to 1000 (adjust based on your needs)
-  const maxIds = 1000;
-  const params = [];
+  // ✅ This uses the array from knownIds.js
+  const params = generateParams(KNOWN_IDS.tasks);
   
-  for (let i = 1; i <= maxIds; i++) {
-    params.push({ id: i.toString() });
-  }
-  
-  // If you have specific UUIDs, add them here
-  const knownIds = [
-    '01krwdyb1acccffnrgcbf8wa4h',
-    // Add more IDs you know exist
-  ];
-  
-  knownIds.forEach(id => {
-    params.push({ id });
-  });
-  
-  console.log(`Generated ${params.length} edit paths`);
+  console.log(`✅ Generated ${params.length} task edit paths`);
   return params;
 }
 
